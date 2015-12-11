@@ -1,0 +1,54 @@
+# -*- mode: ruby -*-
+# vi: set ft=ruby :
+
+shared_folder = "../../../shared"
+jboss_root_folder = "../../../shared/jboss.root/standalone/deployments"
+
+atg_folder = "/Users/andreas/ATG/ATG11.1"
+# boxes (definitions or pre-built) can be downloaded here: https://github.com/chef/bento
+path_to_vm = "../../../shared/opscode_centos-6.6_chef-provisionerless.box"
+vm_ip_address = "192.168.128.25"
+
+Vagrant.configure("2") do |config|
+  # Every Vagrant virtual environment requires a box to build off of.
+  config.vm.define "oracle-atg-siebel-x86_64" do |x86_64|
+    x86_64.vm.box = "bento-centos-6.6"
+    x86_64.vm.box_url = path_to_vm
+  end
+
+  # Host and network configuration
+  config.vm.hostname = "atg02-jboss.localdomain"
+  config.vm.network "private_network", ip: vm_ip_address
+  
+  # Enable X11
+  config.ssh.forward_agent = true
+  config.ssh.forward_x11 = true
+
+  config.vm.provider :virtualbox do |vb|
+    # Don't boot with headless mode
+    vb.gui = true
+    vb.customize ["modifyvm", :id, "--memory", "4096"]
+    vb.customize ["modifyvm", :id, "--vram", "64"]
+    vb.customize ["modifyvm", :id, "--cpus", "2"]
+    vb.customize ["modifyvm", :id, "--ioapic", "on"]
+  end
+
+  config.vm.provision :chef_solo do |chef|
+	config.omnibus.chef_version = :latest
+    config.vm.synced_folder shared_folder, "/tmp/chef"
+#   User web will only be created on initial provisioning - use "vagrant reload" later: 
+  config.vm.synced_folder jboss_root_folder, "/opt/jboss/standalone/deployments", owner: "web", group: "web", mount_options: ["dmode=775,fmode=774"]
+  config.vm.synced_folder atg_folder, "/opt/ATG/ATG11.1", owner: "web", group: "web"
+    chef.add_role "oracle-xe-role"
+    chef.add_role "jboss-role"
+    chef.arguments = '-l debug'
+    chef.cookbooks_path = "../../cookbooks"
+    chef.roles_path = "../../roles"
+    chef.json = {
+      "java" => {
+        :jdk_version => 8 
+      }
+    }
+  end
+
+end

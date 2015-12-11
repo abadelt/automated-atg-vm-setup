@@ -1,0 +1,20 @@
+{
+  "name": "oracle-xe-role",
+  "description": "Install and configure Oracle XE",
+  "default_attributes": {
+    "oracle-xe": {
+      "url": "file:///tmp/chef/oracle-xe-11.2.0-1.0.x86_64.rpm",
+      "http-port": "8079",
+      "oracle-password": "oracle"
+    }
+  },
+  "override_attributes": {
+  },
+  "chef_type": "role",
+  "json_class": "Chef::Role",
+  "run_list": [
+    "recipe[oracle-xe]"
+  ],
+  "env_run_lists": {
+  }
+}

@@ -1,0 +1,45 @@
+# -*- mode: ruby -*-
+# vi: set ft=ruby :
+
+shared_folder = "../../tmp/shared_folder"
+path_to_vm = "../../tmp/opscode_centos-6.5_chef-provisionerless.box"
+vm_ip_address = "192.168.128.12"
+
+Vagrant.configure("2") do |config|
+  # Every Vagrant virtual environment requires a box to build off of.
+  config.vm.define "x86_64" do |x86_64|
+    x86_64.vm.box = "bento-centos-6.5"
+    config.vm.box_url = path_to_vm
+  end
+
+  # Host and network configuration
+  config.vm.hostname = "oracle-xe.localdomain"
+  config.vm.network "private_network", ip: vm_ip_address
+
+  # Enable X11
+  config.ssh.forward_x11 = true
+
+  config.vm.provider :virtualbox do |vb|
+    # Don't boot with headless mode
+    vb.gui = true
+    vb.customize ["modifyvm", :id, "--memory", "2048"]
+    vb.customize ["modifyvm", :id, "--cpus", "1"]
+    vb.customize ["modifyvm", :id, "--ioapic", "on"]
+  end
+
+  config.vm.provision :chef_solo do |chef|
+    config.omnibus.chef_version = :latest
+    chef.cookbooks_path = "../../cookbooks"
+    chef.roles_path = "../../roles"
+    config.vm.synced_folder shared_folder, "/tmp/chef"
+    chef.add_role "oracle-xe-role"
+    chef.arguments = '-l debug'
+
+    chef.json = {
+      "java" => {
+        :jdk_version => 7
+      }
+    }
+  end
+
+end
